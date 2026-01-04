@@ -6,24 +6,32 @@ import axios from 'axios';
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState(''); // State to store error messages
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    axios.post('http://localhost:3001/login', { email, password })
-      .then((result) => {
-        console.log(result);
-        if (result.data === 'Successful') {
-          navigate('/home');
-        }
-      })
-      .catch((err) => console.log(err));
+    setError(''); // Clear previous errors
+
+    try {
+      const response = await axios.post('http://localhost:3001/login', { email, password });
+      if (response.status === 200 && response.data.message === 'Successful') {
+        navigate('/home'); // Navigate to the home page on successful login
+      }
+    } catch (err) {
+      if (err.response && err.response.data && err.response.data.error) {
+        setError(err.response.data.error); // Display error message from the server
+      } else {
+        setError('An unexpected error occurred.');
+      }
+    }
   };
 
   return (
     <div className="container d-flex justify-content-center align-items-center min-vh-100 bg-light">
       <div className="card shadow-lg border-0 rounded-4 p-4" style={{ maxWidth: '420px', width: '100%' }}>
         <h2 className="text-center mb-4 fw-bold text-primary">Login Account</h2>
+        {error && <div className="alert alert-danger">{error}</div>} {/* Display error message */}
         <form onSubmit={handleSubmit}>
           <div className="mb-3">
             <label className="form-label fw-semibold text-secondary">Email</label>
