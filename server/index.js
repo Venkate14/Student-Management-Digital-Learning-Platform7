@@ -3,7 +3,6 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const EmployeeModel = require('./models/Employee');
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
 app.use(express.json());
@@ -92,19 +91,27 @@ app.get('/employees', async (req, res) => {
 });
 
 // Create payment intent
-app.post('/create-payment-intent', async (req, res) => {
-  const { amount } = req.body; // amount in cents
+const Razorpay = require('razorpay');
+
+// Initialize Razorpay
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_YOUR_KEY_ID', // Replace with valid defaults or env
+  key_secret: process.env.RAZORPAY_KEY_SECRET || 'YOUR_KEY_SECRET',
+});
+
+// Create Razorpay Order
+app.post('/create-order', async (req, res) => {
+  const { amount } = req.body; // amount in cents/paise
 
   try {
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: amount,
-      currency: 'inr',
-      payment_method_types: ['card', 'upi'],
-    });
+    const options = {
+      amount: amount, // Razorpay expects amount in paise
+      currency: "INR",
+      receipt: "receipt_" + Date.now(),
+    };
 
-    res.send({
-      clientSecret: paymentIntent.client_secret,
-    });
+    const order = await razorpay.orders.create(options);
+    res.json(order);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

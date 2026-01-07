@@ -1,10 +1,46 @@
 import React, { useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
+import useRazorpay from "react-razorpay";
 
-const PaymentModal = ({ show, onClose, product, clientSecret, stripePromise, CheckoutForm, Elements, onSuccess }) => {
-    const [paymentMethod, setPaymentMethod] = useState("paypal_credit_card"); // default selection
+const PaymentModal = ({ show, onClose, product, orderId, onSuccess }) => {
+    const [Razorpay] = useRazorpay();
 
     if (!show) return null;
+
+    const handlePayment = (method) => {
+        const options = {
+            key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_YOUR_KEY_ID", // Load from env or fallback
+            amount: product.price * 100, // Amount is in currency subunits. Default currency is INR. Hence, 50000 refers to 50000 paise
+            currency: "INR",
+            name: "Dub Technologies",
+            description: `Purchase ${product.title} `,
+            image: "https://example.com/your_logo", // Optional
+            order_id: orderId, // This is a sample Order ID. Pass the `id` obtained in the response of Step 1
+            handler: function (response) {
+                // Validate payment at server - using "razorpay_payment_id", "razorpay_order_id", "razorpay_signature"
+                alert(`Payment Successful! Payment ID: ${response.razorpay_payment_id} `);
+                if (onSuccess) onSuccess(response);
+            },
+            prefill: {
+                name: "Student Name",
+                email: "student@example.com",
+                contact: "9999999999",
+                method: method // This might pre-select, but Razorpay Standard Checkout handles the UI
+            },
+            notes: {
+                address: "Razorpay Corporate Office",
+            },
+            theme: {
+                color: "#3399cc",
+            },
+        };
+
+        const rzp1 = new Razorpay(options);
+        rzp1.on("payment.failed", function (response) {
+            alert(response.error.description);
+        });
+        rzp1.open();
+    };
 
     return (
         <div
@@ -13,93 +49,68 @@ const PaymentModal = ({ show, onClose, product, clientSecret, stripePromise, Che
             style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
         >
             <div className="modal-dialog modal-dialog-centered">
-                <div className="modal-content shadow-sm" style={{ borderRadius: "10px", maxWidth: "400px" }}>
+                <div className="modal-content shadow-sm" style={{ borderRadius: "10px", maxWidth: "450px" }}>
 
                     <div className="modal-header border-0 pt-3 pb-0 px-3">
-                        <h5 className="modal-title fw-bold" style={{ fontSize: "16px" }}>Check out with PayPal</h5>
+                        <h5 className="modal-title fw-bold" style={{ fontSize: "18px" }}>Select Payment Method</h5>
                         <button type="button" className="btn-close" onClick={onClose} aria-label="Close"></button>
                     </div>
 
                     <div className="modal-body px-4 pb-4 pt-2">
-
-                        <p className="text-muted mb-3" style={{ fontSize: "13px" }}>
-                            Save time. Checkout securely. Pay without sharing your financial information.
+                        <p className="text-muted mb-4" style={{ fontSize: "14px" }}>
+                            Complete your purchase details securely.
                         </p>
 
-                        {/* PayPal Buttons */}
-                        <div className="d-grid gap-2 mb-3">
+                        <div className="d-grid gap-3">
+                            {/* PhonePe Button */}
                             <button
-                                className="btn d-flex align-items-center justify-content-center"
-                                style={{ backgroundColor: "#ffc439", borderRadius: "20px", height: "45px", border: "none" }}
-                                onClick={() => alert("Redirecting to PayPal...")}
+                                className="btn d-flex align-items-center justify-content-between p-3 border rounded shadow-sm"
+                                style={{ backgroundColor: "#5f259f", color: "white" }}
+                                onClick={() => handlePayment('upi')}
                             >
-                                <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" alt="PayPal" style={{ height: "24px" }} />
+                                <div className="d-flex align-items-center gap-3">
+                                    {/* Placeholder Icon */}
+                                    <div style={{ width: '30px', height: '30px', background: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <span style={{ color: '#5f259f', fontWeight: 'bold', fontSize: '10px' }}>Pe</span>
+                                    </div>
+                                    <span className="fw-bold fs-5">PhonePe</span>
+                                </div>
+                                <span className="badge bg-light text-dark rounded-pill">UPI</span>
                             </button>
 
+                            {/* Google Pay Button */}
                             <button
-                                className="btn d-flex align-items-center justify-content-center text-white"
-                                style={{ backgroundColor: "#003087", borderRadius: "20px", height: "45px", border: "none" }}
-                                onClick={() => alert("Redirecting to PayPal Credit...")}
+                                className="btn d-flex align-items-center justify-content-between p-3 border rounded shadow-sm"
+                                style={{ backgroundColor: "#ffffff", color: "#1f1f1f", border: "1px solid #ddd" }}
+                                onClick={() => handlePayment('upi')}
                             >
-                                <span style={{ fontWeight: "bold", fontStyle: "italic", marginRight: "5px" }}>PayPal</span>
-                                <span style={{ fontWeight: "normal" }}>CREDIT</span>
+                                <div className="d-flex align-items-center gap-3">
+                                    {/* Placeholder Icon */}
+                                    {/* Using a generic SVG or text for GPay */}
+                                    <span style={{ fontWeight: 'bold', fontSize: '20px', color: '#4285F4' }}>G</span>
+                                    <span className="fw-bold fs-5">Pay</span>
+                                </div>
+                                <span className="badge bg-secondary rounded-pill">UPI</span>
+                            </button>
+
+                            {/* Razorpay (All Options) Button */}
+                            <button
+                                className="btn d-flex align-items-center justify-content-between p-3 border rounded shadow-sm"
+                                style={{ backgroundColor: "#3399cc", color: "white" }}
+                                onClick={() => handlePayment()}
+                            >
+                                <div className="d-flex align-items-center gap-3">
+                                    <span className="fw-bold fs-5">Other / Card</span>
+                                </div>
+                                <span className="small">All options</span>
                             </button>
                         </div>
 
-                        {/* Card Icons */}
-                        <div className="d-flex justify-content-center gap-2 mb-3">
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/4/41/Visa_Logo.png" alt="Visa" style={{ height: "20px" }} />
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" style={{ height: "20px" }} />
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/3/30/American_Express_logo.svg" alt="Amex" style={{ height: "20px" }} />
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/Discover_Card_logo.svg/200px-Discover_Card_logo.svg.png" alt="Discover" style={{ height: "20px" }} />
+                        <div className="text-center mt-4">
+                            <small className="text-muted" style={{ fontSize: "11px" }}>
+                                Secured by Razorpay
+                            </small>
                         </div>
-
-                        <div className="text-center mb-3">
-                            <span className="text-muted fst-italic" style={{ fontSize: "11px" }}>Powered by </span>
-                            <strong className="text-primary fst-italic" style={{ fontSize: "12px" }}>PayPal</strong>
-                        </div>
-
-                        <hr className="my-3" />
-
-                        {/* Radio Option */}
-                        <div className="form-check">
-                            <input
-                                className="form-check-input"
-                                type="radio"
-                                name="paymentMethod"
-                                id="creditCard"
-                                checked={paymentMethod === "paypal_credit_card"}
-                                onChange={() => setPaymentMethod("paypal_credit_card")}
-                            />
-                            <label className="form-check-label fw-bold" htmlFor="creditCard" style={{ fontSize: "15px", color: "#000" }}>
-                                Online Credit Card or PayPal
-                            </label>
-                        </div>
-
-                        {/* If selected, we can show the stripe form here as the "Credit Card" part of the "Online Credit Card" option? 
-                Or just leave it as the template for now. 
-                The user asked for the "template". 
-                I'll add a section below that renders the Stripe form if they pick a different option, or just inside here.
-                Let's make it expandable.
-            */}
-
-                        {paymentMethod === "paypal_credit_card" && (
-                            <div className="mt-3 p-3 border rounded bg-light">
-                                {/* Re-integrating Stripe Form as user likely wants functionality too */}
-                                <div style={{ fontSize: '13px', marginBottom: '10px' }}>Enter your card details:</div>
-                                {clientSecret && stripePromise && Elements && CheckoutForm ? (
-                                    <Elements options={{ clientSecret, appearance: { theme: 'stripe' } }} stripe={stripePromise}>
-                                        <CheckoutForm
-                                            price={product.price}
-                                            onSuccess={onSuccess}
-                                            onCancel={onClose}
-                                        />
-                                    </Elements>
-                                ) : (
-                                    <div>Loading Stripe...</div>
-                                )}
-                            </div>
-                        )}
 
                     </div>
                 </div>

@@ -43,27 +43,24 @@ function Pdfs() {
         return;
       }
       setSelectedPdf(p);
-      // Create Payment Intent on the server
-      fetch("http://localhost:3001/create-payment-intent", {
+      // Create Razorpay Order on the server
+      fetch("http://localhost:3001/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: p.price * 100 }), // Amount in cents
+        body: JSON.stringify({ amount: p.price * 100 }), // Amount in paise
       })
         .then((res) => res.json())
         .then((data) => {
           if (data.error) {
-            alert("Payment init failed: " + data.error + ". Check server console/keys.");
+            alert("Payment init failed: " + data.error + ". Check server Razorpay keys.");
             return;
           }
-          if (!data.clientSecret) {
-            alert("No client secret received. Check server Stripe keys.");
-            return;
-          }
-          setClientSecret(data.clientSecret);
+          // Store the Order ID and show modal
+          setClientSecret(data.id); // Re-using clientSecret state for orderId to avoid heavy refactoring
           setShowPaymentModal(true);
         })
         .catch((err) => {
-          console.error("Error creating payment intent:", err);
+          console.error("Error creating order:", err);
           alert("Network error or server down. Check console.");
         });
     }
@@ -232,7 +229,7 @@ function Pdfs() {
           show={showPaymentModal}
           onClose={closeModal}
           product={selectedPdf}
-          clientSecret={clientSecret}
+          orderId={clientSecret}
           stripePromise={stripePromise}
           CheckoutForm={CheckoutForm}
           Elements={Elements}
